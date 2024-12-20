@@ -13,35 +13,45 @@ import visualize
 
 from evojax.task.slimevolley import SlimeVolley
 
-runs_per_net = 1
+
+NUM_REPEATS = 16
 
 
 # Use the NN network phenotype and the discrete actuator force function.
 def eval_genome(genome, config):
     net = neat.nn.FeedForwardNetwork.create(genome, config)
 
-    total_rewards = []
+    env = SlimeVolley()
 
-    for runs in range(runs_per_net):
-        env = SlimeVolley()
-        key = jax.random.PRNGKey(0)
-        key = jnp.expand_dims(key, axis=0)
+    # Create batched random keys
+    key = jax.random.PRNGKey(0)
+    keys = jax.random.split(key, NUM_REPEATS)
 
-        state = env.reset(key)
-        terminated = False
-        total_reward = 0
+    # Reset multiple environments at once
+    state = env.reset(keys)
+    terminated = jnp.zeros(NUM_REPEATS, dtype=bool)
+    total_rewards = jnp.zeros(NUM_REPEATS)
 
-        while not terminated:
-            obs = state.obs.flatten().tolist()
-            action = net.activate(obs)
-            action = jnp.array(action)[None]
-            state, reward, terminated = env.step(state, action)
-            total_reward += reward.item()
+    while not jnp.all(terminated):
+        # Get observations for all non-terminated environments
+        obs_batch = state.obs.reshape(NUM_REPEATS, -1)
 
-        total_rewards.append(total_reward)
+        # Process each observation through the network
+        actions = []
+        for obs in obs_batch:
+            action = net.activate(obs.tolist())
+            actions.append(action)
+        actions = jnp.array(actions)
 
-    # The genome's fitness is its worst performance across all runs.
-    return sum(total_rewards) / len(total_rewards)
+        # Step all environments
+        state, reward, new_terminated = env.step(state, actions)
+
+        # Update total rewards for non-terminated environments
+        total_rewards = jnp.where(terminated, total_rewards, total_rewards + reward)
+        terminated = jnp.logical_or(terminated, new_terminated)
+
+    # Return the mean reward across all batches
+    return total_rewards.mean().item()
 
 
 def eval_genomes(genomes, config):
