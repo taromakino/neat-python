@@ -1,0 +1,4 @@
+evojax
+graphviz
+matplotlib
+opencv-python
