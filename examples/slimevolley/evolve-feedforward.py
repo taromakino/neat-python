@@ -12,6 +12,7 @@ from argparse import ArgumentParser
 from feed_forward import FeedForwardNetwork
 from functools import partial
 from slimevolley import SlimeVolley
+from visualize_reporter import VisualizeReporter
 
 
 def eval_genome(genome, config, batch_size):
@@ -57,18 +58,21 @@ def save_gif(out_dir, best_genome, config):
 
 
 def main(args):
+    os.makedirs(args.out_dir, exist_ok=True)
+
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, 'config-feedforward')
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path)
 
     pop = neat.Population(config)
     stats = neat.StatisticsReporter()
+    visualize = VisualizeReporter(args.out_dir, pop)
     pop.add_reporter(stats)
     pop.add_reporter(neat.StdOutReporter(True))
+    pop.add_reporter(visualize)
 
     pe = neat.ParallelEvaluator(multiprocessing.cpu_count(), partial(eval_genome, batch_size=args.batch_size))
     winner = pop.run(pe.evaluate, n=args.num_generations)
-
     print(winner)
 
     save_gif(args.out_dir, pop.best_genome, config)
