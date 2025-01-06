@@ -12,6 +12,7 @@ from argparse import ArgumentParser
 from feed_forward import FeedForwardNetwork
 from functools import partial
 from slimevolley import SlimeVolley
+from metrics_reporter import MetricsReporter
 from visualize_reporter import VisualizeReporter
 
 
@@ -66,9 +67,11 @@ def main(args):
 
     pop = neat.Population(config)
     stats = neat.StatisticsReporter()
+    metrics = MetricsReporter(args.out_dir, pop)
     visualize = VisualizeReporter(args.out_dir, pop)
     pop.add_reporter(stats)
     pop.add_reporter(neat.StdOutReporter(True))
+    pop.add_reporter(metrics)
     pop.add_reporter(visualize)
 
     pe = neat.ParallelEvaluator(multiprocessing.cpu_count(), partial(eval_genome, batch_size=args.batch_size))
