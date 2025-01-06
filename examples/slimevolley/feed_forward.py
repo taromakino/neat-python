@@ -13,6 +13,7 @@ ACTIVATION_DICT = {
 
 class FeedForwardNetwork(neat.nn.FeedForwardNetwork):
     def activate(self, inputs):
+        batch_size = len(inputs)
         values = {}
         for i, input_node in enumerate(self.input_nodes):
             values[input_node] = inputs[:, i]
@@ -23,9 +24,15 @@ class FeedForwardNetwork(neat.nn.FeedForwardNetwork):
                 weighted_sum += values[parent_node] * weight
             values[node] = ACTIVATION_DICT[act_func](bias + response * weighted_sum)
 
-        output = [values[output_node] for output_node in self.output_nodes]
-        output = np.stack(output, axis=1)
-        return output
+        outputs = []
+        for output_node in self.output_nodes:
+            if output_node in values:
+                outputs.append(values[output_node])
+            else:
+                outputs.append(np.zeros(batch_size))
+        outputs = np.stack(outputs, axis=1)
+
+        return outputs
 
     @staticmethod
     def create(genome, config):
