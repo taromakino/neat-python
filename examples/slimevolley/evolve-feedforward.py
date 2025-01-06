@@ -9,9 +9,9 @@ import neat
 import numpy as np
 import os
 from argparse import ArgumentParser
-from evojax.task.slimevolley import SlimeVolley
 from feed_forward import FeedForwardNetwork
 from functools import partial
+from slimevolley import SlimeVolley
 
 
 def eval_genome(genome, config, batch_size):
@@ -34,9 +34,26 @@ def eval_genome(genome, config, batch_size):
     return rewards.mean().item()
 
 
-def eval_genomes(genomes, config, batch_size):
-    for genome_id, genome in genomes:
-        genome.fitness = eval_genome(genome, config, batch_size)
+def save_gif(out_dir, best_genome, config):
+    net = FeedForwardNetwork.create(best_genome, config)
+
+    task = SlimeVolley(test=True)
+    task_reset_fn = jax.jit(task.reset)
+    task_step_fn = jax.jit(task.step)
+
+    keys = jax.random.PRNGKey(0)[None, :]
+    task_state = task_reset_fn(keys)
+    done = jnp.zeros((1), dtype=bool)
+
+    screens = []
+    while not done:
+        actions = net.activate(np.array(task_state.obs))
+        task_state, step_rewards, done = task_step_fn(task_state, jnp.array(actions))
+        screens.append(SlimeVolley.render(task_state))
+
+    os.makedirs(out_dir, exist_ok=True)
+    gif_file = os.path.join(out_dir, "slimevolley.gif")
+    screens[0].save(gif_file, save_all=True, append_images=screens[1:], duration=40, loop=0)
 
 
 def main(args):
@@ -49,15 +66,17 @@ def main(args):
     pop.add_reporter(stats)
     pop.add_reporter(neat.StdOutReporter(True))
 
-    # winner = pop.run(partial(eval_genomes, batch_size=args.batch_size), 300)
-
     pe = neat.ParallelEvaluator(multiprocessing.cpu_count(), partial(eval_genome, batch_size=args.batch_size))
-    winner = pop.run(pe.evaluate)
+    winner = pop.run(pe.evaluate, n=args.num_generations)
 
     print(winner)
+
+    save_gif(args.out_dir, pop.best_genome, config)
 
 
 if __name__ == '__main__':
     parser = ArgumentParser()
+    parser.add_argument("--out_dir", type=str, required=True)
+    parser.add_argument("--num_generations", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=16)
     main(parser.parse_args())
