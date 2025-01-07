@@ -61,7 +61,7 @@ def save_gif(out_dir, best_genome, config):
 
     os.makedirs(out_dir, exist_ok=True)
     gif_file = os.path.join(out_dir, "slimevolley.gif")
-    screens[0].save(gif_file, save_all=True, append_images=screens[1:], duration=40, loop=0)
+    screens[0].save(gif_file, save_all=True, append_images=screens[1:1000], duration=20, loop=0)
 
 
 def set_identity_output_activations(population) -> None:
