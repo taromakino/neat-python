@@ -6,6 +6,8 @@ from neat.activations import *
 NEAT_TO_NUMPY_ACTIVATION = {
     identity_activation: lambda x: x,
     relu_activation: lambda x: np.maximum(0, x),
+    sin_activation: lambda x: np.sin(x),
+    square_activation: lambda x: np.square(x),
     sigmoid_activation: lambda x: 1 / (1 + np.exp(-x)),
     tanh_activation: lambda x: np.tanh(x),
 }
