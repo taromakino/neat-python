@@ -91,15 +91,15 @@ def main(args: argparse.Namespace) -> None:
     stats = neat.StatisticsReporter()
     metrics = MetricsReporter(args.out_dir, population)
     visualize = VisualizeReporter(args.out_dir, population)
-    # identity_output_activations = IdentityOutputReporter(partial(
-    #     set_identity_output_activations,
-    #     population=population
-    # ))
+    identity_output_activations = IdentityOutputReporter(partial(
+        set_identity_output_activations,
+        population=population
+    ))
     population.add_reporter(stats)
     population.add_reporter(neat.StdOutReporter(True))
     population.add_reporter(metrics)
     population.add_reporter(visualize)
-    # population.add_reporter(identity_output_activations)
+    population.add_reporter(identity_output_activations)
 
     # Iterate through the generations, running each genome on a separate process
     pe = neat.ParallelEvaluator(multiprocessing.cpu_count(), partial(eval_genome, batch_size=args.batch_size))

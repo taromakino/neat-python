@@ -1,8 +1,16 @@
 import graphviz
 import os
+import pickle
 from neat import Config
 from neat.genome import DefaultGenome
 from neat.reporting import BaseReporter
+
+
+def save_file(path, obj):
+    dpath = os.path.dirname(path)
+    os.makedirs(dpath, exist_ok=True)
+    with open(path, "wb") as file:
+        pickle.dump(obj, file)
 
 
 class VisualizeReporter(BaseReporter):
@@ -81,3 +89,4 @@ class VisualizeReporter(BaseReporter):
 
     def end_generation(self, config, population, species_set):
         self.visualize(self.out_dir, config, self.population.best_genome, self.population.generation)
+        save_file(os.path.join(self.out_dir, f"best_genome_{self.population.generation}.pkl"), self.population.best_genome)
