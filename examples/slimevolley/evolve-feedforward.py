@@ -9,6 +9,7 @@ import multiprocessing
 import neat
 import numpy as np
 import os
+import random
 from argparse import ArgumentParser
 from feed_forward import BatchFeedForwardNetwork
 from functools import partial
@@ -74,6 +75,7 @@ def set_identity_output_activations(population) -> None:
 
 
 def main(args: argparse.Namespace) -> None:
+    random.seed(args.seed)
     os.makedirs(args.out_dir, exist_ok=True)
 
     config_path = os.path.join(os.path.dirname(__file__), "config-feedforward")
@@ -112,6 +114,7 @@ def main(args: argparse.Namespace) -> None:
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--out_dir", type=str, required=True)
+    parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--num_generations", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=16)
     main(parser.parse_args())
